@@ -1,0 +1,27 @@
+.material-container {
+  .filter-container {
+    background: #fff;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  .el-table {
+    .el-image {
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.3s;
+
+      &:hover {
+        transform: scale(1.05);
+      }
+    }
+  }
+
+  .pagination-container {
+    padding: 16px 0;
+    text-align: right;
+  }
+} 
