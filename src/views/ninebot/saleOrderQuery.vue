@@ -125,16 +125,21 @@
           </template>
         </el-table-column>
         
-        <!-- 订单日期 -->
+        <!-- 引用状态 -->
         <el-table-column
-          prop="billdate"
-          label="订单日期"
+          prop="referencestate"
+          label="引用状态"
           width="120"
           align="center"
-          sortable
         >
           <template slot-scope="scope">
-            {{ formatDate(scope.row.billdate) }}
+            <el-tag 
+              :type="getReferenceStateType(scope.row.referencestate)" 
+              effect="light"
+              size="medium"
+            >
+              {{ scope.row.referencestate || '未引用' }}
+            </el-tag>
           </template>
         </el-table-column>
 
@@ -714,6 +719,16 @@ export default {
         '待审核': 'warning',
         '无需审核': 'info',
         '已作废': 'danger'
+      }
+      return statusMap[status] || 'info'
+    },
+
+    // 获取引用状态类型
+    getReferenceStateType(status) {
+      const statusMap = {
+        '已引用': 'success',
+        '部分引用': 'warning',
+        '未引用': 'info'
       }
       return statusMap[status] || 'info'
     }
