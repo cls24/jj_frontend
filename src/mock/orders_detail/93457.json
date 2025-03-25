@@ -1,0 +1,50 @@
+{
+	"data": [{
+		"draftQty": 3.0,
+		"name": "*武汉网越信息技术有限公司",
+		"purchaseOrders": [],
+		"typeid": "001390000200405",
+		"kfullname": "南京盛佳总店库",
+		"ktypeid": "00001",
+		"accountqty": 32.0,
+		"zhangtao": "SJ",
+		"scanNum": 1.0,
+		"unit": "个",
+		"productName": "H3C LS-5500V2-28C-EI",
+		"standard": "24口千兆三层网管企业级网络核心交换机 万兆上行",
+		"isUndefined": false,
+		"alreadyNum": 0,
+		"BillnumberId": "93458-1-SJ",
+		"usercode": "0110200411",
+		"goodsnumber": "",
+		"position": "B4-17,B4-15,B4-09,B4-11,B4-13",
+		"_position": "B4-17,B4-15,B4-009,B4-11,B4-13",
+		"positioninfo": [{
+			"position__name": "4-17",
+			"position__area": "B",
+			"position__type": "0",
+			"id": 564
+		}, {
+			"position__name": "4-15",
+			"position__area": "B",
+			"position__type": "0",
+			"id": 1312
+		}, {
+			"position__name": "4-09",
+			"position__area": "B",
+			"position__type": "0",
+			"id": 1753
+		}, {
+			"position__name": "4-11",
+			"position__area": "B",
+			"position__type": "0",
+			"id": 1754
+		}, {
+			"position__name": "4-13",
+			"position__area": "B",
+			"position__type": "0",
+			"id": 1755
+		}],
+		"billnumberId": "93458"
+	}]
+}
