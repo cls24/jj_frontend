@@ -498,19 +498,22 @@ export default {
         pageSize: this.queryParams.pageSize,
         status: this.orderStatus,
         customerId: this.customerId,
-        orderNo: this.orderNumber,
-        startDate: this.dateRange && this.dateRange.length > 0 ? this.dateRange[0] : '',
-        endDate: this.dateRange && this.dateRange.length > 1 ? this.dateRange[1] : ''
+        orderNo: this.orderNumber
       }
 
+      // 构建API URL
+      const startDate = this.dateRange && this.dateRange.length > 0 ? this.dateRange[0] : ''
+      const endDate = this.dateRange && this.dateRange.length > 1 ? this.dateRange[1] : ''
+      const apiUrl = `http://192.168.1.200:8000/outBoundList/date/${startDate}/${endDate}`
+
       // 调用API获取数据
-      this.$api.post(this.$api.url.GET_SALE_ORDER_LIST, params)
+      axios.get(apiUrl, { params })
         .then(res => {
-          if (res.resp_code === 0) {
-            this.tableData = res.data.list || []
+          if (res.status === 200 && res.data) {
+            this.tableData = res.data.data || []
             this.total = res.data.total || 0
           } else {
-            this.$message.error(res.resp_msg || '获取订单列表失败')
+            this.$message.error('获取订单列表失败')
             this.tableData = []
             this.total = 0
           }
