@@ -712,13 +712,24 @@ export default {
           }, 600)
         } else {
           // 正常API调用获取订单详情
-          const apiUrl = `http://192.168.1.200:8000/outBoundList/${item.billnumberid}`
+          const apiUrl = `http://192.168.1.200:8000/outBoundList/${item.billnumberid}-${item.billcode}`
           console.log('请求真实API:', apiUrl)
 
           axios.get(apiUrl)
             .then(res => {
               if (res.status === 200 && res.data) {
-                this.orderDetail = res.data
+                // 处理返回的数据格式
+                const detailData = res.data.data.map(item => ({
+                  id: item.billnumberId,
+                  position: item.position,
+                  kfullname: item.kfullname,
+                  productName: item.productName,
+                  standard: item.standard,
+                  unit: item.unit,
+                  scanNum: item.scanNum,
+                  accountqty: item.accountqty
+                }))
+                this.orderDetail = { data: detailData }
                 this.$message.success('获取详情成功')
               } else {
                 this.$message.error('获取详情失败')
