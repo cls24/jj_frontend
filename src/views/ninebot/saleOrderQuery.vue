@@ -378,6 +378,9 @@ import { parseTime } from '@/utils'
 // 引入本地JSON文件
 import mockOrdersData from '@/mock/orders.json'
 
+// API基础URL
+const API_BASE_URL = 'http://192.168.1.200:8000'
+
 export default {
   name: 'SaleOrderQuery',
   data() {
@@ -495,7 +498,7 @@ export default {
       // 构建API URL
       const startDate = this.dateRange && this.dateRange.length > 0 ? this.dateRange[0] : ''
       const endDate = this.dateRange && this.dateRange.length > 1 ? this.dateRange[1] : ''
-      const apiUrl = `http://192.168.1.200:8000/outBoundList/${startDate}/${endDate}`
+      const apiUrl = `${API_BASE_URL}/outBoundList/date/${startDate}/${endDate}`
 
       // 调用API获取数据
       axios.get(apiUrl)
@@ -706,7 +709,7 @@ export default {
           }, 600)
         } else {
           // 正常API调用获取订单详情
-          const apiUrl = `http://192.168.1.200:8000/outBoundList/${item.billnumberid}-${item.billcode}`
+          const apiUrl = `${API_BASE_URL}/outBoundList/${item.billnumberid}-${item.billcode}`
           console.log('请求真实API:', apiUrl)
 
           axios.get(apiUrl)
