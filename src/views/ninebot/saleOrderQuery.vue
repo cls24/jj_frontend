@@ -492,22 +492,13 @@ export default {
     getOrderList() {
       this.loading = true
 
-      // 构建查询参数
-      const params = {
-        pageNum: this.queryParams.pageNum,
-        pageSize: this.queryParams.pageSize,
-        status: this.orderStatus,
-        customerId: this.customerId,
-        orderNo: this.orderNumber
-      }
-
       // 构建API URL
       const startDate = this.dateRange && this.dateRange.length > 0 ? this.dateRange[0] : ''
       const endDate = this.dateRange && this.dateRange.length > 1 ? this.dateRange[1] : ''
-      const apiUrl = `http://192.168.1.200:8000/outBoundList/date/${startDate}/${endDate}`
+      const apiUrl = `http://192.168.1.200:8000/outBoundList/${startDate}/${endDate}`
 
       // 调用API获取数据
-      axios.get(apiUrl, { params })
+      axios.get(apiUrl)
         .then(res => {
           if (res.status === 200 && res.data) {
             this.tableData = res.data.data || []
