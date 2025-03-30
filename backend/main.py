@@ -16,26 +16,26 @@ logging.basicConfig(
 async def main():
     return {"message": "Hello，FastAPI"}
 
-@app.middleware("http")
-async def log_request(request: Request, call_next):
-  # 获取客户端 IP 地址
-  client_host = request.client.host if request.client else "unknown"
-
-  # 获取请求方法和路径
-  method = request.method
-  path = request.url.path
-
-  # 记录访问日志
-  logging.info(f"IP: {client_host}, Method: {method}, Path: {path}")
-
-  # 继续处理请求
-  response = await call_next(request)
-
-  # 记录响应状态码
-  status_code = response.status_code
-  logging.info(f"Status Code: {status_code}")
-
-  return response
+# @app.middleware("http")
+# async def log_request(request: Request, call_next):
+#   # 获取客户端 IP 地址
+#   client_host = request.client.host if request.client else "unknown"
+#
+#   # 获取请求方法和路径
+#   method = request.method
+#   path = request.url.path
+#
+#   # 记录访问日志
+#   logging.info(f"IP: {client_host}, Method: {method}, Path: {path}")
+#
+#   # 继续处理请求
+#   response = await call_next(request)
+#
+#   # 记录响应状态码
+#   status_code = response.status_code
+#   logging.info(f"Status Code: {status_code}")
+#
+#   return response
 
 @app.get("/outBoundList/date/{strStartDate}/{strEndDate}")
 async def getOutBoundList(strStartDate: str,strEndDate: str):

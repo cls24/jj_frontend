@@ -365,7 +365,14 @@
           </el-table-column>
           <el-table-column label="出库数量" width="120" align="center">
             <template slot-scope="scope">
-              <span class="quantity-tag">
+              <span
+                class="quantity-tag"
+                :class="{
+                  'quantity-exceed': scope.row.scanNum > scope.row.accountqty,
+                  'quantity-equal': scope.row.scanNum === scope.row.accountqty,
+                  'quantity-below': scope.row.scanNum < scope.row.accountqty
+                }"
+              >
                 {{ scope.row.scanNum || 0 }} {{ scope.row.unit }}
               </span>
             </template>
@@ -381,12 +388,12 @@
 
     <!-- 打印模板 (隐藏) -->
     <div id="printSection" style="display: none;">
-      <div class="print-container" v-if="orderDetail && orderDetail.data && orderDetail.data.length">
+      <div v-if="orderDetail && orderDetail.data && orderDetail.data.length" class="print-container">
         <div class="print-header">
-          <h1>销售订单详情</h1>
+          <h1>出库拣货清单</h1>
           <div class="print-date">打印日期: {{ getCurrentDate() }}</div>
         </div>
-        
+
         <div class="print-order-info">
           <table class="print-info-table">
             <tbody>
@@ -411,8 +418,8 @@
                 <td class="print-value">{{ currentOrder.statename || '未知' }}</td>
                 <td class="print-label">订单金额:</td>
                 <td class="print-value">{{ formatAmount(currentOrder.ordermoney) }}</td>
-                <td class="print-label"></td>
-                <td class="print-value"></td>
+                <td class="print-label" />
+                <td class="print-value" />
               </tr>
               <tr>
                 <td class="print-label">送货地址:</td>
@@ -425,7 +432,7 @@
             </tbody>
           </table>
         </div>
-        
+
         <div class="print-detail">
           <h2>订单明细</h2>
           <table class="print-detail-table">
@@ -447,26 +454,32 @@
                 <td>{{ item.kfullname }}</td>
                 <td>{{ item.productName }}</td>
                 <td>{{ item.standard }}</td>
-                <td>{{ item.scanNum || 0 }} {{ item.unit }}</td>
+                <td
+                  :class="{
+                    'print-quantity-exceed': item.scanNum > item.accountqty,
+                    'print-quantity-equal': item.scanNum === item.accountqty,
+                    'print-quantity-below': item.scanNum < item.accountqty
+                  }"
+                >{{ item.scanNum || 0 }} {{ item.unit }}</td>
                 <td>{{ item.accountqty }} {{ item.unit }}</td>
               </tr>
             </tbody>
           </table>
         </div>
-        
+
         <div class="print-footer">
           <div class="print-signatures">
             <div class="signature-box">
               <div>制单人:</div>
-              <div class="signature-line"></div>
+              <div class="signature-line" />
             </div>
             <div class="signature-box">
               <div>审核人:</div>
-              <div class="signature-line"></div>
+              <div class="signature-line" />
             </div>
             <div class="signature-box">
               <div>收货人:</div>
-              <div class="signature-line"></div>
+              <div class="signature-line" />
             </div>
           </div>
           <div class="page-number">第 1 页</div>
@@ -668,7 +681,7 @@ export default {
       // 获取明细数据
       if (item && item.billnumberid) {
         console.log('准备获取订单详情:', item.billcode, '订单ID:', item.billnumberid)
-        const details = []
+        // const details = []
 
         this.dialogVisible = true
         this.detailLoading = true
@@ -714,7 +727,7 @@ export default {
     printOrder(row) {
       // 先获取详情，然后打印
       this.showOrderDetail(row)
-      
+
       // 等待详情加载完成后打印
       this.$nextTick(() => {
         const checkDetailLoaded = setInterval(() => {
@@ -723,7 +736,7 @@ export default {
             this.printOrderDetail()
           }
         }, 200)
-        
+
         // 设置超时，防止无限等待
         setTimeout(() => {
           clearInterval(checkDetailLoaded)
@@ -737,23 +750,23 @@ export default {
         this.$message.warning('没有可打印的订单详情数据')
         return
       }
-      
+
       // 创建打印窗口
       const printWindow = window.open('', '_blank')
       if (!printWindow) {
         this.$message.error('无法创建打印窗口，请检查浏览器是否阻止弹出窗口')
         return
       }
-      
+
       // 获取打印内容
       const printContent = document.getElementById('printSection').innerHTML
-      
+
       // 写入HTML头部
       printWindow.document.write('<!DOCTYPE html>')
       printWindow.document.write('<html>')
       printWindow.document.write('<head>')
       printWindow.document.write('<title>订单详情 - ' + this.currentBillCode + '</title>')
-      
+
       // 写入样式
       printWindow.document.write('<style>')
       printWindow.document.write('@media print {')
@@ -769,6 +782,9 @@ export default {
       printWindow.document.write('  .print-detail-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; }')
       printWindow.document.write('  .print-detail-table th, .print-detail-table td { border: 1px solid #ddd; padding: 8px; font-size: 14px; text-align: center; }')
       printWindow.document.write('  .print-detail-table th { background-color: #f2f2f2; }')
+      printWindow.document.write('  .print-quantity-exceed { background-color: #fef0f0 !important; color: #f56c6c !important; }')
+      printWindow.document.write('  .print-quantity-equal { background-color: #fdf6ec !important; color: #e6a23c !important; }')
+      printWindow.document.write('  .print-quantity-below { background-color: #f0f9eb !important; color: #67c23a !important; }')
       printWindow.document.write('  .print-footer { margin-top: 30px; }')
       printWindow.document.write('  .print-signatures { display: flex; justify-content: space-between; margin-bottom: 20px; }')
       printWindow.document.write('  .signature-box { width: 30%; }')
@@ -777,11 +793,11 @@ export default {
       printWindow.document.write('}')
       printWindow.document.write('</style>')
       printWindow.document.write('</head>')
-      
+
       // 写入主体内容
       printWindow.document.write('<body>')
       printWindow.document.write(printContent)
-      
+
       // 写入脚本
       printWindow.document.write('<script>')
       printWindow.document.write('window.onload = function() {')
@@ -793,26 +809,26 @@ export default {
       printWindow.document.write('  }, 200);')
       printWindow.document.write('};')
       printWindow.document.write('<\/script>')
-      
+
       // 完成HTML
       printWindow.document.write('</body>')
       printWindow.document.write('</html>')
       printWindow.document.close()
-      
+
       // 提示用户
       this.$message.success('正在打印订单详情')
     },
 
     // 获取当前日期
     getCurrentDate() {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      const hour = String(now.getHours()).padStart(2, '0');
-      const minute = String(now.getMinutes()).padStart(2, '0');
-      
-      return `${year}-${month}-${day} ${hour}:${minute}`;
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      const day = String(now.getDate()).padStart(2, '0')
+      const hour = String(now.getHours()).padStart(2, '0')
+      const minute = String(now.getMinutes()).padStart(2, '0')
+
+      return `${year}-${month}-${day} ${hour}:${minute}`
     },
 
     // 处理更多操作命令
@@ -1207,11 +1223,47 @@ $text-color-secondary: #606266;
 }
 
 .quantity-tag {
-  background-color: #5ff20f;
-  color: #67c23a;
   padding: 2px 8px;
   border-radius: 4px;
   font-weight: 500;
+  display: inline-block;
+  min-width: 60px;
+
+  &.quantity-exceed {
+    background-color: #fef0f0;
+    color: #f56c6c;
+    border: 1px solid #fbc4c4;
+  }
+
+  &.quantity-equal {
+    background-color: #fdf6ec;
+    color: #e6a23c;
+    border: 1px solid #f5dab1;
+  }
+
+  &.quantity-below {
+    background-color: #f0f9eb;
+    color: #67c23a;
+    border: 1px solid #c2e7b0;
+  }
+}
+
+/* 添加打印表格中数量单元格的样式 */
+#printSection {
+  .print-quantity-exceed {
+    background-color: #fef0f0 !important;
+    color: #f56c6c !important;
+  }
+
+  .print-quantity-equal {
+    background-color: #fdf6ec !important;
+    color: #e6a23c !important;
+  }
+
+  .print-quantity-below {
+    background-color: #f0f9eb !important;
+    color: #67c23a !important;
+  }
 }
 
 // 自定义对话框样式
