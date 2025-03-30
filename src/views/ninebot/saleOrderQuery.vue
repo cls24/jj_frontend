@@ -520,7 +520,7 @@ import { host } from '@/settings'
 import { parseTime } from '@/utils'
 
 // API基础URL
-const API_BASE_URL = 'http://192.168.31.35:8000'
+const API_BASE_URL = host
 
 export default {
   name: 'SaleOrderQuery',
