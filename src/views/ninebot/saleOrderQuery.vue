@@ -3,15 +3,6 @@
     <!-- 查询条件区域 -->
     <el-card class="filter-container" shadow="hover">
       <div class="filter-item-group">
-        <!-- Mock数据开关 -->
-        <el-switch
-          v-model="mockSwitch"
-          active-text="使用模拟数据"
-          inactive-text="使用真实数据"
-          class="filter-item mock-switch"
-          @change="handleMockChange"
-        />
-
         <!-- 订单状态选择 -->
         <el-select
           v-model="orderStatus"
@@ -98,200 +89,220 @@
       style="margin-top: 16px;"
     >
       <div slot="header" class="card-header">
-        <span>销售订单列表</span>
+        <div class="header-left">
+          <span class="header-title">销售订单列表</span>
+          <el-radio-group v-model="filterType" size="small" @change="handleFilterChange">
+            <el-radio-button label="unreferenced">未引用</el-radio-button>
+            <el-radio-button label="all">全部</el-radio-button>
+          </el-radio-group>
+        </div>
         <span class="total-info">共 {{ total }} 条记录</span>
       </div>
 
-      <el-table
-        v-loading="loading"
-        :data="tableData"
-        border
-        stripe
-        style="width: 100%"
-        element-loading-text="加载中..."
-        element-loading-spinner="el-icon-loading"
-        element-loading-background="rgba(0, 0, 0, 0.8)"
-        height="calc(100vh - 280px)"
-        @row-click="handleRowClick"
-        @selection-change="handleSelectionChange"
+      <!-- 使用标签页展示不同仓库的订单 -->
+      <el-tabs 
+        v-model="activeWarehouse" 
+        type="border-card"
+        class="custom-tabs"
       >
-        <!-- 选择列 -->
-        <el-table-column type="selection" width="55" align="center" />
-
-        <!-- 订单号 -->
-        <el-table-column
-          prop="billcode"
-          label="订单号"
-          width="180"
-          fixed="left"
-          align="center"
-          show-overflow-tooltip
+        <el-tab-pane 
+          v-for="(warehouseOrders, index) in filteredTableData" 
+          :key="index"
+          :label="index === 0 ? '盛佳' : 'YAO'"
+          :name="index"
         >
-          <template slot-scope="scope">
-            <el-link type="primary" @click.native.stop="showOrderDetail(scope.row)">
-              {{ scope.row.billcode }}
-            </el-link>
-          </template>
-        </el-table-column>
+          <div class="warehouse-header">
+            <div class="warehouse-info">
+              <i class="el-icon-office-building"></i>
+              <span class="warehouse-name">{{ index === 0 ? '盛佳仓库' : 'YAO仓库' }}</span>
+            </div>
+            <span class="warehouse-count">
+              <i class="el-icon-document"></i>
+              共 {{ warehouseOrders.length }} 条记录
+            </span>
+          </div>
+          
+          <el-table
+            v-loading="loading"
+            :data="warehouseOrders"
+            border
+            stripe
+            style="width: 100%"
+            element-loading-text="加载中..."
+            element-loading-spinner="el-icon-loading"
+            element-loading-background="rgba(0, 0, 0, 0.8)"
+            height="calc(100vh - 380px)"
+            @selection-change="handleSelectionChange"
+            row-key="billnumberid"
+          >
+            <!-- 选择列 -->
+            <el-table-column type="selection" width="55" align="center" />
 
-        <!-- 客户名称 -->
-        <el-table-column
-          prop="btypeid_fullname"
-          label="客户名称"
-          width="200"
-          show-overflow-tooltip
-        />
-
-        <!-- 订单金额 -->
-        <el-table-column
-          prop="ordermoney"
-          label="订单金额"
-          width="120"
-          align="right"
-          sortable
-        >
-          <template slot-scope="scope">
-            <span class="amount">{{ formatAmount(scope.row.ordermoney) }}</span>
-          </template>
-        </el-table-column>
-
-        <!-- 订单数量 -->
-        <el-table-column
-          prop="orderqty"
-          label="订单数量"
-          width="100"
-          align="right"
-          sortable
-        />
-
-        <!-- 订单状态 -->
-        <el-table-column
-          prop="checkstate"
-          label="订单状态"
-          width="120"
-          align="center"
-        >
-          <template slot-scope="scope">
-            <el-tag
-              :type="getStatusType(scope.row.checkstate)"
-              effect="light"
-              size="medium"
+            <!-- 订单号 -->
+            <el-table-column
+              prop="billcode"
+              label="订单号"
+              width="180"
+              fixed="left"
+              align="center"
+              show-overflow-tooltip
             >
-              {{ scope.row.checkstate }}
-            </el-tag>
-          </template>
-        </el-table-column>
+              <template slot-scope="scope">
+                <el-link 
+                  type="primary" 
+                  @click.native.stop="showOrderDetail(scope.row)"
+                >
+                  {{ scope.row.billcode }}
+                </el-link>
+              </template>
+            </el-table-column>
 
-        <!-- 引用状态 -->
-        <el-table-column
-          prop="statename"
-          label="引用状态"
-          width="120"
-          align="center"
-        >
-          <template slot-scope="scope">
-            <el-tag
-              :type="getReferenceStateType(scope.row.statename)"
-              effect="light"
-              size="medium"
+            <!-- 客户名称 -->
+            <el-table-column
+              prop="btypeid_fullname"
+              label="客户名称"
+              width="200"
+              show-overflow-tooltip
+            />
+
+            <!-- 订单金额 -->
+            <el-table-column
+              prop="ordermoney"
+              label="订单金额"
+              width="120"
+              align="right"
+              sortable
             >
-              {{ scope.row.statename || '未知' }}
-            </el-tag>
-          </template>
-        </el-table-column>
+              <template slot-scope="scope">
+                <span class="amount">{{ formatAmount(scope.row.ordermoney) }}</span>
+              </template>
+            </el-table-column>
 
-        <!-- 经办人 -->
-        <el-table-column
-          prop="checke_fullname"
-          label="经办人"
-          width="120"
-          align="center"
-        />
+            <!-- 订单数量 -->
+            <el-table-column
+              prop="orderqty"
+              label="订单数量"
+              width="100"
+              align="right"
+              sortable
+            />
 
-        <!-- 项目 -->
-        <el-table-column
-          prop="dealbtypeid_fullname"
-          label="项目"
-          width="200"
-          show-overflow-tooltip
-        />
-
-        <!-- 送货地址 -->
-        <el-table-column
-          prop="sysdiy3_head"
-          label="送货地址"
-          width="200"
-          show-overflow-tooltip
-        >
-          <template slot-scope="scope">
-            <el-tooltip effect="dark" placement="top" :content="scope.row.sysdiy3_head">
-              <i class="el-icon-location-information" style="margin-right: 5px" />
-            </el-tooltip>
-            {{ scope.row.sysdiy3_head }}
-          </template>
-        </el-table-column>
-
-        <!-- 备注 -->
-        <el-table-column
-          prop="comment"
-          label="备注"
-          min-width="150"
-          show-overflow-tooltip
-        />
-
-        <!-- 操作 -->
-        <el-table-column
-          label="操作"
-          width="150"
-          align="center"
-          fixed="right"
-        >
-          <template slot-scope="scope">
-            <el-button
-              size="mini"
-              type="text"
-              icon="el-icon-view"
-              @click.stop="showOrderDetail(scope.row)"
-            >详情</el-button>
-            <el-button
-              size="mini"
-              type="text"
-              icon="el-icon-printer"
-              @click.stop="printOrder(scope.row)"
-            >打印</el-button>
-            <el-dropdown
-              trigger="click"
-              @command="(command) => handleCommand(command, scope.row)"
-              @click.stop
+            <!-- 订单状态 -->
+            <el-table-column
+              prop="checkstate"
+              label="订单状态"
+              width="120"
+              align="center"
             >
-              <el-button size="mini" type="text" icon="el-icon-more">更多</el-button>
-              <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="copy" icon="el-icon-copy-document">复制</el-dropdown-item>
-                <el-dropdown-item command="track" icon="el-icon-truck">跟踪</el-dropdown-item>
-                <el-dropdown-item
-                  command="export"
-                  icon="el-icon-download"
-                  :disabled="scope.row.checkstate === '已作废'"
-                >导出</el-dropdown-item>
-              </el-dropdown-menu>
-            </el-dropdown>
-          </template>
-        </el-table-column>
-      </el-table>
+              <template slot-scope="scope">
+                <el-tag
+                  :type="getStatusType(scope.row.checkstate)"
+                  effect="light"
+                  size="medium"
+                >
+                  {{ scope.row.checkstate }}
+                </el-tag>
+              </template>
+            </el-table-column>
 
-      <!-- 分页 -->
-      <div class="pagination-container">
-        <el-pagination
-          background
-          :current-page="queryParams.pageNum"
-          :page-sizes="[10, 20, 50, 100]"
-          :page-size="queryParams.pageSize"
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="total"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
-      </div>
+            <!-- 引用状态 -->
+            <el-table-column
+              prop="statename"
+              label="引用状态"
+              width="120"
+              align="center"
+            >
+              <template slot-scope="scope">
+                <el-tag
+                  :type="getReferenceStateType(scope.row.statename)"
+                  effect="light"
+                  size="medium"
+                >
+                  {{ scope.row.statename || '未知' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+
+            <!-- 经办人 -->
+            <el-table-column
+              prop="checke_fullname"
+              label="经办人"
+              width="120"
+              align="center"
+            />
+
+            <!-- 项目 -->
+            <el-table-column
+              prop="printcount"
+              label="打印次数"
+              width="120"
+              show-overflow-tooltip
+            />
+
+            <!-- 送货地址 -->
+            <el-table-column
+              prop="sysdiy3_head"
+              label="送货地址"
+              width="200"
+              show-overflow-tooltip
+            >
+              <template slot-scope="scope">
+                <el-tooltip effect="dark" placement="top" :content="scope.row.sysdiy3_head">
+                  <i class="el-icon-location-information" style="margin-right: 5px" />
+                </el-tooltip>
+                {{ scope.row.sysdiy3_head }}
+              </template>
+            </el-table-column>
+
+            <!-- 备注 -->
+            <el-table-column
+              prop="comment"
+              label="备注"
+              min-width="150"
+              show-overflow-tooltip
+            />
+
+            <!-- 操作 -->
+            <el-table-column
+              label="操作"
+              width="150"
+              align="center"
+              fixed="right"
+            >
+              <template slot-scope="scope">
+                <el-button
+                  size="mini"
+                  type="text"
+                  icon="el-icon-view"
+                  @click.stop="showOrderDetail(scope.row)"
+                >详情</el-button>
+                <el-button
+                  size="mini"
+                  type="text"
+                  icon="el-icon-printer"
+                  @click.stop="printOrder(scope.row)"
+                >打印</el-button>
+                <el-dropdown
+                  trigger="click"
+                  @command="(command) => handleCommand(command, scope.row)"
+                  @click.stop
+                >
+                  <el-button size="mini" type="text" icon="el-icon-more">更多</el-button>
+                  <el-dropdown-menu slot="dropdown">
+                    <el-dropdown-item command="copy" icon="el-icon-copy-document">复制</el-dropdown-item>
+                    <el-dropdown-item command="track" icon="el-icon-truck">跟踪</el-dropdown-item>
+                    <el-dropdown-item
+                      command="export"
+                      icon="el-icon-download"
+                      :disabled="scope.row.checkstate === '已作废'"
+                    >导出</el-dropdown-item>
+                  </el-dropdown-menu>
+                </el-dropdown>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+      </el-tabs>
     </el-card>
 
     <!-- 订单详情对话框 -->
@@ -300,7 +311,6 @@
       :title="`订单详情 - ${currentBillCode || ''}`"
       :visible.sync="dialogVisible"
       width="70%"
-      :close-on-click-modal="false"
       custom-class="detail-dialog"
       :append-to-body="true"
       :destroy-on-close="true"
@@ -375,11 +385,9 @@
 import axios from 'axios'
 import { host } from '@/settings'
 import { parseTime } from '@/utils'
-// 引入本地JSON文件
-import mockOrdersData from '@/mock/orders.json'
 
 // API基础URL
-const API_BASE_URL = 'http://192.168.1.200:8000'
+const API_BASE_URL = 'http://192.168.31.35:8000'
 
 export default {
   name: 'SaleOrderQuery',
@@ -410,10 +418,6 @@ export default {
         { value: '已引用完成', label: '已引用完成' },
         { value: '已完成', label: '已完成' }
       ],
-      // Mock开关状态
-      mockSwitch: false,
-      // Mock数据内部定义
-      mockOrdersData: null,
       // 客户选项
       customerOptions: [],
       customerLoading: false,
@@ -461,36 +465,41 @@ export default {
       detailLoading: false,
       currentOrder: {},
       currentBillCode: '',
-      orderDetail: null
+      orderDetail: null,
+      activeWarehouse: 0,
+      filterType: 'unreferenced',
+      rawTableData: []
+    }
+  },
+  computed: {
+    // 处理表格数据，根据筛选条件过滤
+    filteredTableData() {
+      if (!this.rawTableData || !Array.isArray(this.rawTableData)) {
+        return []
+      }
+
+      // 根据筛选类型过滤数据
+      const filteredData = this.rawTableData.map(warehouseOrders => {
+        if (!Array.isArray(warehouseOrders)) return warehouseOrders
+        
+        return warehouseOrders.filter(order => {
+          if (this.filterType === 'unreferenced') {
+            return order.statename === '未引用'
+          }
+          return true // 全部数据
+        })
+      })
+
+      return filteredData
     }
   },
   created() {
     // 页面创建时初始化数据
     this.resetQuery()
-
-    // 初始化mock数据
-    this.initMockData()
-
-    // 检查url参数中是否有mock标志
-    const useLocalMock = this.$route.query.mock === '1'
-    // 默认开启mock开关以便于测试
-    this.mockSwitch = useLocalMock || true
-
     // 加载数据
-    if (this.mockSwitch) {
-      this.getMockData()
-    } else {
-      this.getOrderList()
-    }
+    this.getOrderList()
   },
   methods: {
-    // 初始化Mock数据
-    initMockData() {
-      // 直接使用导入的本地JSON文件
-      this.mockOrdersData = mockOrdersData
-      console.log('已加载本地mock数据:', this.mockOrdersData ? '成功' : '失败', Object.keys(this.mockOrdersData || {}).length > 0 ? '包含数据' : '无数据')
-    },
-
     // 获取订单列表数据
     getOrderList() {
       this.loading = true
@@ -504,11 +513,46 @@ export default {
       axios.get(apiUrl)
         .then(res => {
           if (res.status === 200 && res.data) {
-            this.tableData = res.data.data || []
-            this.total = res.data.total || 0
+            console.log('API响应数据:', res.data)
+            
+            // 保存原始数据
+            this.rawTableData = res.data.data
+
+            // 根据当前筛选条件过滤数据
+            this.tableData = this.filteredTableData
+
+            // 更新总数
+            this.total = this.tableData.reduce((sum, arr) => 
+              sum + (Array.isArray(arr) ? arr.length : 0), 0)
+
+            // 根据查询条件过滤数据
+            if (this.orderStatus || this.orderNumber) {
+              this.tableData = this.tableData.map(warehouseOrders => {
+                if (!Array.isArray(warehouseOrders)) return warehouseOrders
+                
+                return warehouseOrders.filter(order => {
+                  // 订单状态过滤
+                  if (this.orderStatus && 
+                      order.checkstate !== this.orderStatus && 
+                      order.statename !== this.orderStatus) {
+                    return false
+                  }
+
+                  // 订单号过滤
+                  if (this.orderNumber) {
+                    const keyword = this.orderNumber.toLowerCase()
+                    return order.billcode?.toLowerCase().includes(keyword) || 
+                           String(order.billnumberid).toLowerCase().includes(keyword)
+                  }
+
+                  return true
+                })
+              })
+            }
           } else {
             this.$message.error('获取订单列表失败')
             this.tableData = []
+            this.rawTableData = []
             this.total = 0
           }
         })
@@ -516,106 +560,12 @@ export default {
           console.error('获取订单列表失败:', error)
           this.$message.error('获取订单列表失败')
           this.tableData = []
+          this.rawTableData = []
           this.total = 0
         })
         .finally(() => {
           this.loading = false
         })
-    },
-
-    // 获取Mock数据
-    getMockData() {
-      console.log('获取本地Mock数据')
-      this.loading = true
-
-      // 如果mockOrdersData为空，先初始化
-      if (!this.mockOrdersData) {
-        this.initMockData()
-      }
-
-      // 确保mockOrdersData已初始化
-      if (!this.mockOrdersData || !this.mockOrdersData.data) {
-        console.error('Mock数据结构不正确:', this.mockOrdersData)
-        this.$message.error('获取模拟数据失败')
-        this.loading = false
-        return
-      }
-
-      try {
-        // 处理嵌套数组结构
-        let allOrders = []
-        const rawData = this.mockOrdersData.data
-
-        // 记录处理前的数据结构
-        console.log('处理前的数据结构类型:', Array.isArray(rawData) ? 'Array' : typeof rawData)
-
-        // 处理嵌套数组
-        if (Array.isArray(rawData)) {
-          rawData.forEach(outerArray => {
-            if (Array.isArray(outerArray)) {
-              console.log('找到内层数组，长度:', outerArray.length)
-              allOrders = allOrders.concat(outerArray)
-            } else {
-              allOrders.push(outerArray)
-            }
-          })
-        }
-
-        console.log('扁平化后的订单数量:', allOrders.length)
-
-        // 定义订单状态映射（orderstate 到 statename）
-        const orderStateMap = {
-          '0': '未审核',
-          '1': '审核中',
-          '2': '已引用未完成',
-          '3': '已引用完成',
-          '4': '已作废',
-          '5': '已完成'
-        }
-
-        // 设置订单状态
-        allOrders = allOrders.map(order => {
-          // 复制对象，避免修改原始数据
-          const newOrder = { ...order }
-
-          // 根据orderstate设置statename作为引用状态
-          if (newOrder.orderstate && orderStateMap[newOrder.orderstate]) {
-            newOrder.statename = orderStateMap[newOrder.orderstate]
-          }
-
-          return newOrder
-        })
-
-        // 根据查询条件过滤数据
-        let filteredOrders = allOrders
-
-        // 根据订单状态过滤
-        if (this.orderStatus) {
-          filteredOrders = filteredOrders.filter(order =>
-            order.checkstate === this.orderStatus ||
-            order.statename === this.orderStatus
-          )
-        }
-
-        // 根据订单号过滤
-        if (this.orderNumber) {
-          const keyword = this.orderNumber.toLowerCase()
-          filteredOrders = filteredOrders.filter(order =>
-            (order.billcode && order.billcode.toLowerCase().includes(keyword)) ||
-            (order.billnumberid && String(order.billnumberid).toLowerCase().includes(keyword))
-          )
-        }
-
-        console.log('过滤后的订单数量:', filteredOrders.length)
-        this.tableData = filteredOrders
-        this.total = filteredOrders.length
-        this.$message.success('成功加载本地mock数据')
-      } catch (error) {
-        console.error('处理Mock数据出错:', error)
-        this.$message.error('获取模拟数据失败: ' + error.message)
-      } finally {
-        this.loading = false
-      }
     },
 
     // 显示订单详情
@@ -631,162 +581,38 @@ export default {
         this.currentOrder = { ...item }
         this.currentBillCode = item.billcode
 
-        // 如果开启了mock开关，从mock数据中获取
-        if (this.mockSwitch) {
-          console.log('从本地JSON文件获取订单详情')
+        // 调用API获取订单详情
+        const apiUrl = `${API_BASE_URL}/outBoundList/${item.billnumberid}-${item.billcode}`
+        console.log('请求真实API:', apiUrl)
 
-          setTimeout(() => {
-            try {
-              // 从src/mock/orders_detail/对应的billnumberId文件中加载数据
-              const billnumberId = item.billnumberid
-              import(`@/mock/orders_detail/${billnumberId}.json`)
-                .then(detailData => {
-                  console.log('成功加载订单详情文件:', `${billnumberId}.json`)
-                  if (detailData && detailData.data && Array.isArray(detailData.data)) {
-                    details = this.processDraftDetails(detailData.data)
-                    this.orderDetail = { data: details }
-                    this.$message.success('获取本地模拟详情成功')
-                  } else {
-                    throw new Error('详情数据格式不正确')
-                  }
-                })
-                .catch(error => {
-                  console.error(`获取订单详情文件失败: ${error.message}`)
-                  // 首先检查当前订单对象中是否有draft数组
-                  if (item.draft && Array.isArray(item.draft) && item.draft.length > 0) {
-                    console.log('当前订单对象中找到draft数组，条目数:', item.draft.length)
-                    details = this.processDraftDetails(item.draft)
-                  } else {
-                    console.log('当前订单对象中无draft数组，尝试在完整mock数据中查找匹配订单')
-
-                    // 在完整mock数据中查找匹配的订单
-                    if (this.mockOrdersData && this.mockOrdersData.data) {
-                      let foundOrder = null
-
-                      // 遍历嵌套数组查找匹配的订单
-                      this.mockOrdersData.data.forEach(outerArray => {
-                        if (Array.isArray(outerArray)) {
-                          outerArray.forEach(order => {
-                            // 通过billnumberid或billcode匹配
-                            if ((order.billnumberid && order.billnumberid === item.billnumberid) ||
-                                (order.billcode && order.billcode === item.billcode)) {
-                              foundOrder = order
-                            }
-                          })
-                        }
-                      })
-
-                      // 如果找到匹配的订单，处理其draft数组
-                      if (foundOrder && foundOrder.draft && Array.isArray(foundOrder.draft)) {
-                        console.log('在完整mock数据中找到匹配订单，draft条目数:', foundOrder.draft.length)
-                        details = this.processDraftDetails(foundOrder.draft)
-                      }
-                    }
-                  }
-
-                  // 如果仍然没有数据，生成紧急详情数据
-                  if (!details || details.length === 0) {
-                    console.log('无法找到详情数据，生成临时数据')
-                    details = this.generateEmergencyDetailData(item)
-                  }
-
-                  this.orderDetail = { data: details }
-                  this.$message.warning('使用备用数据显示详情')
-                })
-                .finally(() => {
-                  this.detailLoading = false
-                })
-            } catch (error) {
-              console.error('获取模拟详情失败:', error)
-              this.$message.error(`获取模拟详情失败: ${error.message}`)
-
-              // 降级处理 - 使用动态生成的详情数据
-              this.orderDetail = {
-                data: this.generateEmergencyDetailData(item)
-              }
-              this.detailLoading = false
+        axios.get(apiUrl)
+          .then(res => {
+            if (res.status === 200 && res.data) {
+              // 处理返回的数据格式
+              const detailData = res.data.data.map(item => ({
+                id: item.billnumberId,
+                position: item.position,
+                kfullname: item.kfullname,
+                productName: item.productName,
+                standard: item.standard,
+                unit: item.unit,
+                scanNum: item.scanNum,
+                accountqty: item.accountqty
+              }))
+              this.orderDetail = { data: detailData }
+              this.$message.success('获取详情成功')
+            } else {
+              this.$message.error('获取详情失败')
             }
-          }, 600)
-        } else {
-          // 正常API调用获取订单详情
-          const apiUrl = `${API_BASE_URL}/outBoundList/${item.billnumberid}-${item.billcode}`
-          console.log('请求真实API:', apiUrl)
-
-          axios.get(apiUrl)
-            .then(res => {
-              if (res.status === 200 && res.data) {
-                // 处理返回的数据格式
-                const detailData = res.data.data.map(item => ({
-                  id: item.billnumberId,
-                  position: item.position,
-                  kfullname: item.kfullname,
-                  productName: item.productName,
-                  standard: item.standard,
-                  unit: item.unit,
-                  scanNum: item.scanNum,
-                  accountqty: item.accountqty
-                }))
-                this.orderDetail = { data: detailData }
-                this.$message.success('获取详情成功')
-              } else {
-                this.$message.error('获取详情失败')
-              }
-            })
-            .catch(error => {
-              console.error('获取订单详情错误:', error)
-              this.$message.error('获取订单详情失败')
-            })
-            .finally(() => {
-              this.detailLoading = false
-            })
-        }
+          })
+          .catch(error => {
+            console.error('获取订单详情错误:', error)
+            this.$message.error('获取订单详情失败')
+          })
+          .finally(() => {
+            this.detailLoading = false
+          })
       }
-    },
-
-    // 处理draft数组数据转换为标准格式
-    processDraftDetails(draftArray) {
-      if (!draftArray || !Array.isArray(draftArray)) {
-        return []
-      }
-
-      return draftArray.map((draft, index) => {
-        return {
-          id: draft.billnumberid || `DETAIL-${index}`,
-          position: draft.position || `A区-${String.fromCharCode(65 + index)}-${index + 1}`,
-          kfullname: draft.ktypeid_fullname || draft.kfullname || '默认仓库',
-          productName: draft.btype_fullname || draft.productName || `商品-${index + 1}`,
-          standard: draft.standard || '标准规格',
-          unit: draft.unit || '台',
-          scanNum: draft.totalqty || draft.scanNum || 0,
-          accountqty: draft.accountqty || draft.mtotalmoney || 0
-        }
-      })
-    },
-
-    // 生成紧急详情数据
-    generateEmergencyDetailData(item) {
-      return [
-        {
-          id: 'EMERGENCY-1',
-          position: 'A区-紧急-1',
-          kfullname: item.btypeid_fullname || '默认仓库',
-          productName: '紧急产品数据',
-          standard: '标准规格',
-          unit: '台',
-          scanNum: Math.floor(item.orderqty / 2) || 10,
-          accountqty: item.orderqty || 20
-        },
-        {
-          id: 'EMERGENCY-2',
-          position: 'B区-紧急-2',
-          kfullname: item.btypeid_fullname || '默认仓库',
-          productName: '紧急产品数据2',
-          standard: '高级规格',
-          unit: '台',
-          scanNum: Math.ceil(item.orderqty / 2) || 10,
-          accountqty: item.orderqty || 20
-        }
-      ]
     },
 
     // 打印订单
@@ -955,21 +781,13 @@ export default {
       this.queryParams.pageSize = 20
 
       // 重新加载数据
-      if (this.mockSwitch) {
-        this.getMockData()
-      } else {
-        this.getOrderList()
-      }
+      this.getOrderList()
     },
 
     // 执行查询操作
     handleQuery() {
       this.queryParams.pageNum = 1
-      if (this.mockSwitch) {
-        this.getMockData()
-      } else {
-        this.getOrderList()
-      }
+      this.getOrderList()
     },
 
     // 每页条数改变
@@ -989,27 +807,12 @@ export default {
       this.selectedRows = selection
     },
 
-    // 行点击事件
-    handleRowClick(row, column, event) {
-      // 如果点击的是操作列或选择列，不执行详情查看
-      if (column.type === 'selection' || column.label === '操作') {
-        return
-      }
-      this.showOrderDetail(row)
-    },
-
-    // 处理mock开关变化
-    handleMockChange(val) {
-      console.log('Mock开关状态变更:', val)
-      this.loading = true
-
-      if (val) {
-        // 切换到mock数据
-        this.getMockData()
-      } else {
-        // 切换到真实API数据
-        this.getOrderList()
-      }
+    // 处理筛选切换
+    handleFilterChange(value) {
+      this.filterType = value
+      // 更新总数
+      this.total = this.filteredTableData.reduce((sum, arr) => 
+        sum + (Array.isArray(arr) ? arr.length : 0), 0)
     }
   }
 }
@@ -1045,10 +848,6 @@ $text-color-secondary: #606266;
         margin-right: 0;
       }
 
-      .mock-switch {
-        margin-right: 20px;
-      }
-
       .button-group {
         margin-left: auto;
         display: flex;
@@ -1062,10 +861,44 @@ $text-color-secondary: #606266;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 16px 20px;
+      background: linear-gradient(to right, #f8f9fa, #ffffff);
+      border-bottom: 1px solid #ebeef5;
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+
+        .el-radio-group {
+          margin-left: 16px;
+        }
+      }
+
+      .header-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #303133;
+        display: flex;
+        align-items: center;
+        
+        &::before {
+          content: '';
+          display: inline-block;
+          width: 4px;
+          height: 16px;
+          background: #409EFF;
+          margin-right: 8px;
+          border-radius: 2px;
+        }
+      }
 
       .total-info {
-        color: $text-color-secondary;
+        color: #606266;
         font-size: 14px;
+        background: #f4f4f5;
+        padding: 4px 12px;
+        border-radius: 4px;
       }
     }
 
@@ -1116,6 +949,53 @@ $text-color-secondary: #606266;
       }
     }
   }
+
+  .warehouse-header {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .warehouse-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      i {
+        font-size: 20px;
+        color: #409EFF;
+      }
+
+      .warehouse-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #303133;
+      }
+    }
+
+    .warehouse-count {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #606266;
+      font-size: 14px;
+      background: #fff;
+      padding: 6px 12px;
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+
+      i {
+        color: #67C23A;
+      }
+    }
+  }
+
+  .warehouse-card {
+    display: none;
+  }
 }
 
 .amount {
@@ -1139,7 +1019,7 @@ $text-color-secondary: #606266;
 }
 
 .quantity-tag {
-  background-color: #f0f9eb;
+  background-color: #5ff20f;
   color: #67c23a;
   padding: 2px 8px;
   border-radius: 4px;
@@ -1159,5 +1039,61 @@ $text-color-secondary: #606266;
   .el-descriptions__label {
     width: 120px;
   }
+}
+
+.custom-tabs {
+  ::v-deep .el-tabs__header {
+    margin-bottom: 0;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dcdfe6;
+    border-radius: 4px 4px 0 0;
+  }
+
+  ::v-deep .el-tabs__nav {
+    border: none !important;
+  }
+
+  ::v-deep .el-tabs__item {
+    height: 50px;
+    line-height: 50px;
+    font-size: 15px;
+    padding: 0 20px;
+    transition: all 0.3s;
+    border: none !important;
+    margin-right: 4px;
+
+    &.is-active {
+      background: #fff;
+      color: #409EFF;
+      font-weight: 600;
+      border-radius: 4px 4px 0 0;
+      position: relative;
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #409EFF;
+      }
+    }
+
+    &:hover {
+      color: #409EFF;
+    }
+  }
+
+  ::v-deep .el-tabs__content {
+    padding: 20px;
+    background: #fff;
+  }
+}
+
+.draft-item,
+.has-draft-row,
+.draft-switch {
+  display: none;
 }
 </style>

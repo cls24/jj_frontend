@@ -4,7 +4,7 @@ module.exports = {
    * @type {string}
    * @description API host address
    */
-  host: 'http://192.168.1.200:8000',
+  host: 'http://192.168.31.35:8000',
   /**
    * @type {boolean} true | false
    * @description Whether show the settings right-panel
