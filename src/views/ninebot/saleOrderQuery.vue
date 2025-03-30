@@ -344,7 +344,14 @@
           :max-height="400"
         >
           <el-table-column width="50" type="index" align="center" />
-          <el-table-column label="库位" width="120" align="center" prop="position" />
+          <el-table-column label="产品信息" min-width="180">
+            <template slot-scope="scope">
+              <div class="product-info">
+                <div class="product-name">{{ scope.row.productName }}</div>
+                <div class="product-spec">{{ scope.row.standard }}</div>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column label="仓库" width="180" prop="kfullname">
             <template slot-scope="scope">
               {{ scope.row.kfullname }}
@@ -355,14 +362,8 @@
               >库存 [{{ scope.row.accountqty }}/{{ scope.row.unit }}] 台</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="产品信息" min-width="180">
-            <template slot-scope="scope">
-              <div class="product-info">
-                <div class="product-name">{{ scope.row.productName }}</div>
-                <div class="product-spec">{{ scope.row.standard }}</div>
-              </div>
-            </template>
-          </el-table-column>
+          <el-table-column label="库位" width="120" align="center" prop="position" />
+
           <el-table-column label="库存" width="120" align="center">
             <template slot-scope="scope">
               <span
@@ -462,10 +463,10 @@
             <thead>
               <tr>
                 <th>序号</th>
-                <th>库位</th>
-                <th>仓库</th>
                 <th>产品名称</th>
                 <th>规格</th>
+                <th>仓库</th>
+                <th>库位</th>
                 <th>库存</th>
                 <th>今日出库</th>
                 <th>出库数量</th>
@@ -474,10 +475,10 @@
             <tbody>
               <tr v-for="(item, index) in orderDetail.data" :key="index">
                 <td>{{ index + 1 }}</td>
-                <td>{{ item.position }}</td>
-                <td>{{ item.kfullname }}</td>
                 <td>{{ item.productName }}</td>
                 <td>{{ item.standard }}</td>
+                <td>{{ item.kfullname }}</td>
+                <td>{{ item.position }}</td>
                 <td
                   :class="{
                     'print-quantity-exceed': item.scanNum > item.accountqty + item.draftQty,
