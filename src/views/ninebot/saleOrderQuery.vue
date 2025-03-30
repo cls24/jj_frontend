@@ -412,7 +412,9 @@
       <div v-if="orderDetail && orderDetail.data && orderDetail.data.length" class="print-container">
         <div class="print-header">
           <h1>出库拣货单</h1>
-          <div class="print-date">打印日期: {{ getCurrentDate() }}</div>
+          <div id="qrcode-placeholder" class="print-qrcode">
+            <img :src="orderQrCode" alt="订单二维码" class="qr-code-img">
+          </div>
         </div>
 
         <div class="print-order-info">
@@ -601,7 +603,9 @@ export default {
       orderDetail: null,
       activeWarehouse: 0,
       filterType: 'unreferenced',
-      rawTableData: []
+      rawTableData: [],
+      // 新增QR码数据
+      orderQrCode: ''
     }
   },
   computed: {
@@ -704,6 +708,9 @@ export default {
         this.currentOrder = { ...item }
         this.currentBillCode = item.billcode
 
+        // 生成订单号二维码
+        this.generateQRCode(item.billcode)
+
         // 调用API获取订单详情
         const apiUrl = `${API_BASE_URL}/outBoundList/${item.billnumberid}-${item.billcode}`
         console.log('请求真实API:', apiUrl)
@@ -737,6 +744,12 @@ export default {
             this.detailLoading = false
           })
       }
+    },
+
+    // 生成二维码
+    generateQRCode(text) {
+      // 使用在线服务生成二维码
+      this.orderQrCode = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(text)}`
     },
 
     // 打印订单
@@ -790,7 +803,8 @@ export default {
       printWindow.document.write('  .print-container { padding: 20px; }')
       printWindow.document.write('  .print-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }')
       printWindow.document.write('  .print-header h1 { margin: 0; font-size: 24px; }')
-      printWindow.document.write('  .print-date { font-size: 14px; }')
+      printWindow.document.write('  .print-qrcode { width: 100px; height: 100px; }')
+      printWindow.document.write('  .qr-code-img { width: 100%; height: 100%; }')
       printWindow.document.write('  .print-info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }')
       printWindow.document.write('  .print-info-table td { padding: 5px; font-size: 14px; }')
       printWindow.document.write('  .print-label { font-weight: bold; width: 80px; }')
@@ -1418,5 +1432,15 @@ $text-color-secondary: #606266;
 .has-draft-row,
 .draft-switch {
   display: none;
+}
+
+.print-qrcode {
+  width: 100px;
+  height: 100px;
+}
+
+.qr-code-img {
+  width: 100%;
+  height: 100%;
 }
 </style>
