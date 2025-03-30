@@ -363,17 +363,38 @@
               </div>
             </template>
           </el-table-column>
+          <el-table-column label="库存" width="120" align="center">
+            <template slot-scope="scope">
+              <span
+                class="quantity-tag"
+              >
+                {{ scope.row.accountqty }} {{ scope.row.unit }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="今日出库" width="120" align="center">
+            <template slot-scope="scope">
+              <span
+                class="today-quantity-tag"
+                :class="{
+                  'today-exceed': scope.row.draftQty && scope.row.draftQty > 0
+                }"
+              >
+                {{ scope.row.draftQty }} {{ scope.row.unit }}
+              </span>
+            </template>
+          </el-table-column>
           <el-table-column label="出库数量" width="120" align="center">
             <template slot-scope="scope">
               <span
                 class="quantity-tag"
                 :class="{
-                  'quantity-exceed': scope.row.scanNum > scope.row.accountqty,
-                  'quantity-equal': scope.row.scanNum === scope.row.accountqty,
-                  'quantity-below': scope.row.scanNum < scope.row.accountqty
+                  'quantity-exceed': scope.row.scanNum > scope.row.accountqty + scope.row.draftQty,
+                  'quantity-equal': scope.row.scanNum === scope.row.accountqty + scope.row.draftQty,
+                  'quantity-below': scope.row.scanNum < scope.row.accountqty + scope.row.draftQty
                 }"
               >
-                {{ scope.row.scanNum || 0 }} {{ scope.row.unit }}
+                {{ scope.row.scanNum }} {{ scope.row.unit }}
               </span>
             </template>
           </el-table-column>
@@ -390,7 +411,7 @@
     <div id="printSection" style="display: none;">
       <div v-if="orderDetail && orderDetail.data && orderDetail.data.length" class="print-container">
         <div class="print-header">
-          <h1>出库拣货清单</h1>
+          <h1>出库拣货单</h1>
           <div class="print-date">打印日期: {{ getCurrentDate() }}</div>
         </div>
 
@@ -443,8 +464,9 @@
                 <th>仓库</th>
                 <th>产品名称</th>
                 <th>规格</th>
-                <th>出库数量</th>
                 <th>库存</th>
+                <th>今日出库</th>
+                <th>出库数量</th>
               </tr>
             </thead>
             <tbody>
@@ -456,18 +478,21 @@
                 <td>{{ item.standard }}</td>
                 <td
                   :class="{
-                    'print-quantity-exceed': item.scanNum > item.accountqty,
-                    'print-quantity-equal': item.scanNum === item.accountqty,
-                    'print-quantity-below': item.scanNum < item.accountqty
+                    'print-quantity-exceed': item.scanNum > item.accountqty + item.draftQty,
+                    'print-quantity-equal': item.scanNum === item.accountqty + item.draftQty,
+                    'print-quantity-below': item.scanNum < item.accountqty + item.draftQty
                   }"
-                >{{ item.scanNum || 0 }} {{ item.unit }}</td>
-                <td>{{ item.accountqty }} {{ item.unit }}</td>
+                >{{ item.accountqty }} {{ item.unit }}</td>
+                <td :class="{'print-today-exceed': item.draftQty && item.draftQty > 0}">
+                  {{ item.draftQty }} {{ item.unit }}
+                </td>
+                <td>{{ item.scanNum }} {{ item.unit }}</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div class="print-footer">
+        <!-- <div class="print-footer">
           <div class="print-signatures">
             <div class="signature-box">
               <div>制单人:</div>
@@ -483,7 +508,7 @@
             </div>
           </div>
           <div class="page-number">第 1 页</div>
-        </div>
+        </div> -->
       </div>
     </div>
   </div>
@@ -705,7 +730,8 @@ export default {
                 standard: item.standard,
                 unit: item.unit,
                 scanNum: item.scanNum,
-                accountqty: item.accountqty
+                accountqty: item.accountqty,
+                draftQty: item.draftQty || 0 // 添加今日出库数量字段
               }))
               this.orderDetail = { data: detailData }
               this.$message.success('获取详情成功')
@@ -785,6 +811,7 @@ export default {
       printWindow.document.write('  .print-quantity-exceed { background-color: #fef0f0 !important; color: #f56c6c !important; }')
       printWindow.document.write('  .print-quantity-equal { background-color: #fdf6ec !important; color: #e6a23c !important; }')
       printWindow.document.write('  .print-quantity-below { background-color: #f0f9eb !important; color: #67c23a !important; }')
+      printWindow.document.write('  .print-today-exceed { background-color: #ecf5ff !important; color: #409EFF !important; }')
       printWindow.document.write('  .print-footer { margin-top: 30px; }')
       printWindow.document.write('  .print-signatures { display: flex; justify-content: space-between; margin-bottom: 20px; }')
       printWindow.document.write('  .signature-box { width: 30%; }')
@@ -1248,6 +1275,23 @@ $text-color-secondary: #606266;
   }
 }
 
+.today-quantity-tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  display: inline-block;
+  min-width: 60px;
+  background-color: #f4f4f5;
+  color: #909399;
+  border: 1px solid #e9e9eb;
+
+  &.today-exceed {
+    background-color: #ecf5ff;
+    color: #409EFF;
+    border: 1px solid #b3d8ff;
+  }
+}
+
 /* 添加打印表格中数量单元格的样式 */
 #printSection {
   .print-quantity-exceed {
@@ -1263,6 +1307,11 @@ $text-color-secondary: #606266;
   .print-quantity-below {
     background-color: #f0f9eb !important;
     color: #67c23a !important;
+  }
+
+  .print-today-exceed {
+    background-color: #ecf5ff !important;
+    color: #409EFF !important;
   }
 }
 
