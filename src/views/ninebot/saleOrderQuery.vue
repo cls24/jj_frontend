@@ -4,7 +4,7 @@
     <el-card class="filter-container" shadow="hover">
       <div class="filter-item-group">
         <!-- 订单状态选择 -->
-        <el-select
+        <!-- <el-select
           v-model="orderStatus"
           placeholder="订单状态"
           clearable
@@ -17,10 +17,10 @@
             :label="item.label"
             :value="item.value"
           />
-        </el-select>
+        </el-select> -->
 
         <!-- 客户选择 -->
-        <el-select
+        <!-- <el-select
           v-model="customerId"
           filterable
           remote
@@ -41,7 +41,7 @@
             <span style="float: left">{{ item.name }}</span>
             <span style="float: right; color: #8492a6; font-size: 13px">{{ item.code }}</span>
           </el-option>
-        </el-select>
+        </el-select> -->
 
         <!-- 日期选择 -->
         <el-date-picker
@@ -65,7 +65,7 @@
           style="width: 180px"
           @keyup.enter.native="handleQuery"
         >
-          <el-button slot="append" icon="el-icon-search" @click="handleQuery" />
+          <!-- <el-button slot="append" icon="el-icon-search" @click="handleQuery" /> -->
         </el-input>
 
         <!-- 操作按钮组 -->
@@ -654,34 +654,24 @@ export default {
             // 根据当前筛选条件过滤数据
             this.tableData = this.filteredTableData
 
-            // 更新总数
-            this.total = this.tableData.reduce((sum, arr) =>
-              sum + (Array.isArray(arr) ? arr.length : 0), 0)
+            // 根据订单号过滤数据
+            if (this.orderNumber) {
+              const keyword = this.orderNumber.toLowerCase()
 
-            // 根据查询条件过滤数据
-            if (this.orderStatus || this.orderNumber) {
+              // 对所有仓库的数据进行过滤
               this.tableData = this.tableData.map(warehouseOrders => {
                 if (!Array.isArray(warehouseOrders)) return warehouseOrders
 
                 return warehouseOrders.filter(order => {
-                  // 订单状态过滤
-                  if (this.orderStatus &&
-                      order.checkstate !== this.orderStatus &&
-                      order.statename !== this.orderStatus) {
-                    return false
-                  }
-
-                  // 订单号过滤
-                  if (this.orderNumber) {
-                    const keyword = this.orderNumber.toLowerCase()
-                    return order.billcode?.toLowerCase().includes(keyword) ||
-                           String(order.billnumberid).toLowerCase().includes(keyword)
-                  }
-
-                  return true
+                  return (order.billcode && order.billcode.toLowerCase().includes(keyword)) ||
+                         (order.billnumberid && String(order.billnumberid).toLowerCase().includes(keyword))
                 })
               })
             }
+
+            // 更新总数
+            this.total = this.tableData.reduce((sum, arr) =>
+              sum + (Array.isArray(arr) ? arr.length : 0), 0)
           } else {
             this.$message.error('获取订单列表失败')
             this.tableData = []
@@ -879,48 +869,92 @@ export default {
     handleDownload() {
       this.downloadLoading = true
 
-      // 如果有选中行，则只导出选中的行
-      const list = this.selectedRows.length > 0 ? this.selectedRows : this.tableData
+      // 获取仓库数据
+      const warehouseData = []
+      const warehouseNames = ['盛佳仓库', 'YAO仓库']
 
-      import('@/vendor/Export2Excel').then(excel => {
-        const tHeader = [
-          '订单号',
-          '订单日期',
-          '客户名称',
-          '订单金额',
-          '订单数量',
-          '订单状态',
-          '经办人',
-          '项目',
-          '送货地址',
-          '备注'
-        ]
+      // 准备每个仓库的数据 - 使用原始数据而非过滤后的数据
+      this.rawTableData.forEach((warehouseOrders, index) => {
+        if (Array.isArray(warehouseOrders) && warehouseOrders.length > 0) {
+          // 为每条记录添加仓库标识
+          const data = warehouseOrders.map(order => ({
+            ...order,
+            warehouseName: warehouseNames[index] || `仓库${index + 1}`
+          }))
+          warehouseData.push(...data)
+        }
+      })
 
-        const filterVal = [
-          'billcode',
-          'billdate',
-          'btypeid_fullname',
-          'ordermoney',
-          'orderqty',
-          'checkstate',
-          'checke_fullname',
-          'dealbtypeid_fullname',
-          'sysdiy3_head',
-          'comment'
-        ]
-
-        const data = this.formatJson(filterVal, list)
-
-        excel.export_json_to_excel({
-          header: tHeader,
-          data,
-          filename: `销售订单查询_${this.dateRange[0]}_${this.dateRange[1]}`,
-          autoWidth: true,
-          bookType: 'xlsx'
-        })
-
-        this.$message.success('导出成功')
+      if (warehouseData.length === 0) {
+        this.$message.warning('没有可导出的数据')
         this.downloadLoading = false
+        return
+      }
+
+      console.log('准备导出数据:', warehouseData.length, '条记录')
+
+      // 导出文件名
+      const startDate = this.dateRange && this.dateRange.length > 0 ? this.dateRange[0] : ''
+      const endDate = this.dateRange && this.dateRange.length > 1 ? this.dateRange[1] : ''
+      const fileName = `销售订单查询_${startDate}_${endDate}`
+
+      // 定义表头和字段
+      const tHeader = [
+        '仓库',
+        '订单号',
+        '订单日期',
+        '客户名称',
+        '订单金额',
+        '订单数量',
+        '订单状态',
+        '引用状态',
+        '经办人',
+        '项目',
+        '送货地址',
+        '备注'
+      ]
+
+      const filterVal = [
+        'warehouseName',
+        'billcode',
+        'billdate',
+        'btypeid_fullname',
+        'ordermoney',
+        'orderqty',
+        'checkstate',
+        'statename',
+        'checke_fullname',
+        'dealbtypeid_fullname',
+        'sysdiy3_head',
+        'comment'
+      ]
+
+      this.$nextTick(() => {
+        import('@/vendor/Export2Excel').then(excel => {
+          try {
+            // 使用单表格导出方法
+            const data = this.formatJson(filterVal, warehouseData)
+
+            excel.export_json_to_excel({
+              header: tHeader,
+              data,
+              filename: fileName,
+              autoWidth: true,
+              bookType: 'xlsx'
+            })
+
+            this.$message.success(`导出成功，共 ${warehouseData.length} 条记录`)
+          } catch (error) {
+            console.error('导出Excel出错:', error)
+            this.$message.error('导出失败: ' + error.message)
+          } finally {
+            this.downloadLoading = false
+          }
+        }).catch(error => {
+          console.error('加载Export2Excel模块失败:', error)
+          this.$message.error('导出失败: 无法加载导出模块')
+          this.downloadLoading = false
+        })
       })
     },
 
