@@ -100,28 +100,28 @@
       </div>
 
       <!-- 使用标签页展示不同仓库的订单 -->
-      <el-tabs 
-        v-model="activeWarehouse" 
+      <el-tabs
+        v-model="activeWarehouse"
         type="border-card"
         class="custom-tabs"
       >
-        <el-tab-pane 
-          v-for="(warehouseOrders, index) in filteredTableData" 
+        <el-tab-pane
+          v-for="(warehouseOrders, index) in filteredTableData"
           :key="index"
           :label="index === 0 ? '盛佳' : 'YAO'"
           :name="index"
         >
           <div class="warehouse-header">
             <div class="warehouse-info">
-              <i class="el-icon-office-building"></i>
+              <i class="el-icon-office-building" />
               <span class="warehouse-name">{{ index === 0 ? '盛佳仓库' : 'YAO仓库' }}</span>
             </div>
             <span class="warehouse-count">
-              <i class="el-icon-document"></i>
+              <i class="el-icon-document" />
               共 {{ warehouseOrders.length }} 条记录
             </span>
           </div>
-          
+
           <el-table
             v-loading="loading"
             :data="warehouseOrders"
@@ -132,8 +132,8 @@
             element-loading-spinner="el-icon-loading"
             element-loading-background="rgba(0, 0, 0, 0.8)"
             height="calc(100vh - 380px)"
-            @selection-change="handleSelectionChange"
             row-key="billnumberid"
+            @selection-change="handleSelectionChange"
           >
             <!-- 选择列 -->
             <el-table-column type="selection" width="55" align="center" />
@@ -148,8 +148,8 @@
               show-overflow-tooltip
             >
               <template slot-scope="scope">
-                <el-link 
-                  type="primary" 
+                <el-link
+                  type="primary"
                   @click.native.stop="showOrderDetail(scope.row)"
                 >
                   {{ scope.row.billcode }}
@@ -378,6 +378,101 @@
         <el-button type="primary" icon="el-icon-printer" @click="printOrderDetail">打 印</el-button>
       </span>
     </el-dialog>
+
+    <!-- 打印模板 (隐藏) -->
+    <div id="printSection" style="display: none;">
+      <div class="print-container" v-if="orderDetail && orderDetail.data && orderDetail.data.length">
+        <div class="print-header">
+          <h1>销售订单详情</h1>
+          <div class="print-date">打印日期: {{ getCurrentDate() }}</div>
+        </div>
+        
+        <div class="print-order-info">
+          <table class="print-info-table">
+            <tbody>
+              <tr>
+                <td class="print-label">订单号:</td>
+                <td class="print-value">{{ currentBillCode }}</td>
+                <td class="print-label">客户名称:</td>
+                <td class="print-value">{{ currentOrder.btypeid_fullname }}</td>
+                <td class="print-label">订单状态:</td>
+                <td class="print-value">{{ currentOrder.checkstate }}</td>
+              </tr>
+              <tr>
+                <td class="print-label">经办人:</td>
+                <td class="print-value">{{ currentOrder.checke_fullname }}</td>
+                <td class="print-label">订单日期:</td>
+                <td class="print-value">{{ formatDate(currentOrder.billdate) }}</td>
+                <td class="print-label">订单数量:</td>
+                <td class="print-value">{{ currentOrder.orderqty }}</td>
+              </tr>
+              <tr>
+                <td class="print-label">引用状态:</td>
+                <td class="print-value">{{ currentOrder.statename || '未知' }}</td>
+                <td class="print-label">订单金额:</td>
+                <td class="print-value">{{ formatAmount(currentOrder.ordermoney) }}</td>
+                <td class="print-label"></td>
+                <td class="print-value"></td>
+              </tr>
+              <tr>
+                <td class="print-label">送货地址:</td>
+                <td class="print-value" colspan="5">{{ currentOrder.sysdiy3_head }}</td>
+              </tr>
+              <tr>
+                <td class="print-label">备注:</td>
+                <td class="print-value" colspan="5">{{ currentOrder.comment || '无' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="print-detail">
+          <h2>订单明细</h2>
+          <table class="print-detail-table">
+            <thead>
+              <tr>
+                <th>序号</th>
+                <th>库位</th>
+                <th>仓库</th>
+                <th>产品名称</th>
+                <th>规格</th>
+                <th>出库数量</th>
+                <th>库存</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(item, index) in orderDetail.data" :key="index">
+                <td>{{ index + 1 }}</td>
+                <td>{{ item.position }}</td>
+                <td>{{ item.kfullname }}</td>
+                <td>{{ item.productName }}</td>
+                <td>{{ item.standard }}</td>
+                <td>{{ item.scanNum || 0 }} {{ item.unit }}</td>
+                <td>{{ item.accountqty }} {{ item.unit }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="print-footer">
+          <div class="print-signatures">
+            <div class="signature-box">
+              <div>制单人:</div>
+              <div class="signature-line"></div>
+            </div>
+            <div class="signature-box">
+              <div>审核人:</div>
+              <div class="signature-line"></div>
+            </div>
+            <div class="signature-box">
+              <div>收货人:</div>
+              <div class="signature-line"></div>
+            </div>
+          </div>
+          <div class="page-number">第 1 页</div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -481,7 +576,7 @@ export default {
       // 根据筛选类型过滤数据
       const filteredData = this.rawTableData.map(warehouseOrders => {
         if (!Array.isArray(warehouseOrders)) return warehouseOrders
-        
+
         return warehouseOrders.filter(order => {
           if (this.filterType === 'unreferenced') {
             return order.statename === '未引用'
@@ -514,7 +609,7 @@ export default {
         .then(res => {
           if (res.status === 200 && res.data) {
             console.log('API响应数据:', res.data)
-            
+
             // 保存原始数据
             this.rawTableData = res.data.data
 
@@ -522,18 +617,18 @@ export default {
             this.tableData = this.filteredTableData
 
             // 更新总数
-            this.total = this.tableData.reduce((sum, arr) => 
+            this.total = this.tableData.reduce((sum, arr) =>
               sum + (Array.isArray(arr) ? arr.length : 0), 0)
 
             // 根据查询条件过滤数据
             if (this.orderStatus || this.orderNumber) {
               this.tableData = this.tableData.map(warehouseOrders => {
                 if (!Array.isArray(warehouseOrders)) return warehouseOrders
-                
+
                 return warehouseOrders.filter(order => {
                   // 订单状态过滤
-                  if (this.orderStatus && 
-                      order.checkstate !== this.orderStatus && 
+                  if (this.orderStatus &&
+                      order.checkstate !== this.orderStatus &&
                       order.statename !== this.orderStatus) {
                     return false
                   }
@@ -541,7 +636,7 @@ export default {
                   // 订单号过滤
                   if (this.orderNumber) {
                     const keyword = this.orderNumber.toLowerCase()
-                    return order.billcode?.toLowerCase().includes(keyword) || 
+                    return order.billcode?.toLowerCase().includes(keyword) ||
                            String(order.billnumberid).toLowerCase().includes(keyword)
                   }
 
@@ -573,7 +668,7 @@ export default {
       // 获取明细数据
       if (item && item.billnumberid) {
         console.log('准备获取订单详情:', item.billcode, '订单ID:', item.billnumberid)
-        let details = []
+        const details = []
 
         this.dialogVisible = true
         this.detailLoading = true
@@ -617,14 +712,107 @@ export default {
 
     // 打印订单
     printOrder(row) {
-      this.$message.info(`正在准备打印订单: ${row.billcode}`)
-      // 实际打印逻辑
+      // 先获取详情，然后打印
+      this.showOrderDetail(row)
+      
+      // 等待详情加载完成后打印
+      this.$nextTick(() => {
+        const checkDetailLoaded = setInterval(() => {
+          if (!this.detailLoading && this.orderDetail) {
+            clearInterval(checkDetailLoaded)
+            this.printOrderDetail()
+          }
+        }, 200)
+        
+        // 设置超时，防止无限等待
+        setTimeout(() => {
+          clearInterval(checkDetailLoaded)
+        }, 5000)
+      })
     },
 
     // 打印订单详情
     printOrderDetail() {
-      this.$message.info(`正在准备打印订单详情: ${this.currentBillCode}`)
-      // 实际打印逻辑
+      if (!this.orderDetail || !this.orderDetail.data) {
+        this.$message.warning('没有可打印的订单详情数据')
+        return
+      }
+      
+      // 创建打印窗口
+      const printWindow = window.open('', '_blank')
+      if (!printWindow) {
+        this.$message.error('无法创建打印窗口，请检查浏览器是否阻止弹出窗口')
+        return
+      }
+      
+      // 获取打印内容
+      const printContent = document.getElementById('printSection').innerHTML
+      
+      // 写入HTML头部
+      printWindow.document.write('<!DOCTYPE html>')
+      printWindow.document.write('<html>')
+      printWindow.document.write('<head>')
+      printWindow.document.write('<title>订单详情 - ' + this.currentBillCode + '</title>')
+      
+      // 写入样式
+      printWindow.document.write('<style>')
+      printWindow.document.write('@media print {')
+      printWindow.document.write('  body { font-family: Arial, sans-serif; margin: 0; padding: 0; }')
+      printWindow.document.write('  .print-container { padding: 20px; }')
+      printWindow.document.write('  .print-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }')
+      printWindow.document.write('  .print-header h1 { margin: 0; font-size: 24px; }')
+      printWindow.document.write('  .print-date { font-size: 14px; }')
+      printWindow.document.write('  .print-info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }')
+      printWindow.document.write('  .print-info-table td { padding: 5px; font-size: 14px; }')
+      printWindow.document.write('  .print-label { font-weight: bold; width: 80px; }')
+      printWindow.document.write('  .print-detail h2 { font-size: 18px; margin-bottom: 10px; }')
+      printWindow.document.write('  .print-detail-table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; }')
+      printWindow.document.write('  .print-detail-table th, .print-detail-table td { border: 1px solid #ddd; padding: 8px; font-size: 14px; text-align: center; }')
+      printWindow.document.write('  .print-detail-table th { background-color: #f2f2f2; }')
+      printWindow.document.write('  .print-footer { margin-top: 30px; }')
+      printWindow.document.write('  .print-signatures { display: flex; justify-content: space-between; margin-bottom: 20px; }')
+      printWindow.document.write('  .signature-box { width: 30%; }')
+      printWindow.document.write('  .signature-line { margin-top: 30px; border-bottom: 1px solid #000; }')
+      printWindow.document.write('  .page-number { text-align: center; font-size: 12px; }')
+      printWindow.document.write('}')
+      printWindow.document.write('</style>')
+      printWindow.document.write('</head>')
+      
+      // 写入主体内容
+      printWindow.document.write('<body>')
+      printWindow.document.write(printContent)
+      
+      // 写入脚本
+      printWindow.document.write('<script>')
+      printWindow.document.write('window.onload = function() {')
+      printWindow.document.write('  setTimeout(function() {')
+      printWindow.document.write('    window.print();')
+      printWindow.document.write('    setTimeout(function() {')
+      printWindow.document.write('      window.close();')
+      printWindow.document.write('    }, 500);')
+      printWindow.document.write('  }, 200);')
+      printWindow.document.write('};')
+      printWindow.document.write('<\/script>')
+      
+      // 完成HTML
+      printWindow.document.write('</body>')
+      printWindow.document.write('</html>')
+      printWindow.document.close()
+      
+      // 提示用户
+      this.$message.success('正在打印订单详情')
+    },
+
+    // 获取当前日期
+    getCurrentDate() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hour = String(now.getHours()).padStart(2, '0');
+      const minute = String(now.getMinutes()).padStart(2, '0');
+      
+      return `${year}-${month}-${day} ${hour}:${minute}`;
     },
 
     // 处理更多操作命令
@@ -811,7 +999,7 @@ export default {
     handleFilterChange(value) {
       this.filterType = value
       // 更新总数
-      this.total = this.filteredTableData.reduce((sum, arr) => 
+      this.total = this.filteredTableData.reduce((sum, arr) =>
         sum + (Array.isArray(arr) ? arr.length : 0), 0)
     }
   }
@@ -881,7 +1069,7 @@ $text-color-secondary: #606266;
         color: #303133;
         display: flex;
         align-items: center;
-        
+
         &::before {
           content: '';
           display: inline-block;
