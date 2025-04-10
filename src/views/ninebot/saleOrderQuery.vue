@@ -645,16 +645,17 @@ export default {
       // 构建API URL
       const startDate = this.dateRange && this.dateRange.length > 0 ? this.dateRange[0] : ''
       const endDate = this.dateRange && this.dateRange.length > 1 ? this.dateRange[1] : ''
-      const apiUrl = `${API_BASE_URL}/outBoundList/date/${startDate}/${endDate}`
-
+      // const apiUrl = `${API_BASE_URL}/outBoundList/date/${startDate}/${endDate}`
+      const apiUrl = `${API_BASE_URL}//execute-sql-file/orderlist`
       // 调用API获取数据
-      axios.get(apiUrl)
+      // axios.get(apiUrl)
+      axios.post(apiUrl, { 'start_date': startDate, 'end_date': endDate })
         .then(res => {
           if (res.status === 200 && res.data) {
             console.log('API响应数据:', res.data)
 
             // 保存原始数据
-            this.rawTableData = res.data.data
+            this.rawTableData = res.data
 
             // 根据当前筛选条件过滤数据
             this.tableData = this.filteredTableData
